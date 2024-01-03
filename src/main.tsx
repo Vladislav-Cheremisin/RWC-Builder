@@ -1,6 +1,7 @@
 import ReactDOM from "react-dom/client";
 import ExampleComponent, { ExampleComponentProps } from './components/ExampleComponent/ExampleComponent';
 import { FunctionComponent } from 'react';
+import { getViteDevStyleElements } from "./utils/helpers";
 
 class ReactWebComponent extends HTMLElement {
     private ReactComponent: FunctionComponent<ExampleComponentProps>;
@@ -11,12 +12,13 @@ class ReactWebComponent extends HTMLElement {
     
     public shadowRoot: ShadowRoot;
     
+    // TODO: Сделать данный класс универсальным.
     constructor() {
         super();
 
         this.ReactComponent = ExampleComponent;
         this.observer = new MutationObserver(() => this.update);
-        this.shadowRoot = this.attachShadow({ mode: 'open' });
+        this.shadowRoot = this.attachShadow({ mode: 'open' }); // TODO: Нужно добавить возможность отключать shadow DOM.
         this.reactRoot = ReactDOM.createRoot(this.shadowRoot);
 
         this.init();
@@ -42,12 +44,23 @@ class ReactWebComponent extends HTMLElement {
     }
 
     public connectedCallback() {
-        const rwcStyles = document.querySelector('#rwc-builder-styles');
+        // TODO распараллелить обработку стилей с shadow DOM и без.
+        if (process.env.NODE_ENV === 'development') {
+            const styleElements = getViteDevStyleElements();
 
-        if (rwcStyles) {
-            this.shadowRoot.prepend(rwcStyles);
+            styleElements.reverse().forEach((el) => {
+                this.shadowRoot.prepend(el);
+            })
         }
 
+        if (process.env.NODE_ENV === 'production') {
+            const rwcStyles = document.querySelector('#rwc-builder-styles');
+
+            if (rwcStyles) {
+                this.shadowRoot.prepend(rwcStyles);
+            }
+        }
+        
         this.mount();
     }
 
